@@ -66,6 +66,41 @@ mappings {
       PUT: "updateMotionSensors"
     ]
   }
+  path("/status") {
+    action: [
+      GET: "getSensorStatus"
+    ]
+  }
+  // returns currenmode e.g. {"mode": "Away"}
+  path("/mode") {
+    action: [
+      GET: "getMode"
+    ]
+  }
+  path("/mode/:mode_name") {
+    action: [
+      PUT: "setMode"
+    ]
+  }
+
+path("/modes") {
+    action: [
+      GET: "getModes"
+    ]
+  }
+
+path("/alarm") {
+    action: [
+      GET: "getAlarmMode"
+    ]
+  }
+
+path("/alarm/:mode") {
+    action: [
+      PUT: "setAlarmMode"
+    ]
+  }
+
 }
 
 // returns a list like
@@ -76,6 +111,15 @@ def listSwitches() {
     switches.each {
         resp << [name: it.displayName, value: it.currentValue("switch")]
     }
+    return resp
+}
+
+def getSensorStatus() {
+	def resp  = [:]
+    def contact = listContactSensors()
+    def motion = listMotionSensors()
+  	resp.'contact'= contact
+    resp.'motion' = motion
     return resp
 }
 
@@ -116,6 +160,40 @@ def listMotionSensors() {
         resp << [name: it.displayName, value: it.currentValue("motion")]
     }
     return resp
+}
+
+
+def getModes() {
+	def allModes = location.modes 
+    return allModes
+}
+
+def setMode() {
+	def mode_name = params.mode_name
+	log.debug('attempting to set mode to ' + mode_name)
+	location.setMode(mode_name)
+
+    return 'OK'
+}
+
+def getMode() {
+	def currMode = location.mode // "Home", "Away", etc.
+	log.debug "current mode is $currMode"
+    return ['mode': currMode]
+    }
+    
+    
+def getAlarmMode() {
+	def mode = location.currentState("alarmSystemStatus")?.value
+    log.debug(mode)
+    return ['mode': mode]
+	//sendLocationEvent(name: "alarmSystemStatus" , value : "away|stay|off" )
+}
+
+def setAlarmMode() {
+	def mode = params.mode
+    log.debug("setting SHM mode to: " + mode)
+	sendLocationEvent(name: "alarmSystemStatus", value: mode)
 }
 def installed() {}
 
